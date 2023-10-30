@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+<marquee style="font-size: 500px">💀</marquee>
+<script>
+    const audioContext = new AudioContext();
+    const partition = [
+      [{note: 'D', octave: 4, beat: 1}],
+      [{note: 'D', octave: 4, beat: 1}],
+      [{note: 'D', octave: 5, beat: 2}],
+      [{note: 'A', octave: 4, beat: 3}],
+      [{note: 'G#', octave: 4, beat: 2}],
+      [{note: 'G', octave: 4, beat: 2}],
+      [{note: 'F', octave: 4, beat: 2}],
+      [{note: 'D', octave: 4, beat: 1}],
+      [{note: 'F', octave: 4, beat: 1}],
+      [{note: 'G', octave: 4, beat: 1}],
+    ];
+    const notes = ["C", "C#", "D", "Eb", "E", "F", "F#", "G", "G#", "A", "Bb", "B"];
+
+
+    function getPitch(note, octave) {
+      let step = notes.indexOf(note);
+      let power = Math.pow(2, (octave * 12 + step - 57)/12);
+      return 440 * power;
+    }
+
+    const playNote = (keys) =>
+      new Promise((resolve) => {
+        const oscillators = keys.map(({ note, octave, beat }) => {
+          const noteDuration = beat * 0.18;
+
+          const gain = new GainNode(audioContext);
+          gain.connect(audioContext.destination);
+          gain.gain.setValueAtTime(0, audioContext.currentTime);
+          gain.gain.linearRampToValueAtTime(0.15, audioContext.currentTime + 0.01);
+          gain.gain.linearRampToValueAtTime(0, audioContext.currentTime + noteDuration - 0.01);
+
+          const oscillator = new OscillatorNode(audioContext);
+          oscillator.connect(gain);
+          oscillator.type = 'triangle';
+          oscillator.frequency.value = getPitch(note, octave);
+
+          return { oscillator, noteDuration };
+        });
+
+        oscillators.forEach(({ oscillator }) => oscillator.start(audioContext.currentTime));
+
+        setTimeout(() => {
+          oscillators.forEach(({ oscillator }) => {
+            oscillator.stop(0);
+          });
+
+          resolve();
+        }, oscillators[0].noteDuration * 1000);
+      });
+
+    const playMusic = async function () {
+      for (const frequency of partition) {
+        await playNote(frequency);
+      }
+    };
+
+    window.addEventListener('click', playMusic);
+</script>
+</body>
+</html>
